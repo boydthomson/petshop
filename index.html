@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Pet Shop - Third Person View</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="loading-screen">
+        <h1>🐾 Loading Pet Shop... 🐾</h1>
+        <div class="loading-bar">
+            <div class="loading-fill"></div>
+        </div>
+    </div>
+
+    <div id="ui-overlay">
+        <div class="top-ui">
+            <h1>🐾 My 3D Pet Shop 🐾</h1>
+            <div class="controls-hint">
+                <p>🖱️ Click and Drag to Look Around | WASD or Arrow Keys to Move | Click on Animals to Interact</p>
+            </div>
+        </div>
+
+        <div class="stats-panel" id="stats-panel" style="display: none;">
+            <h3 id="pet-name">Buddy the Dog</h3>
+            <div class="stat">
+                <span>❤️ Happiness:</span>
+                <div class="stat-bar">
+                    <div id="happiness-bar" class="stat-fill"></div>
+                </div>
+                <span id="happiness-text">100%</span>
+            </div>
+            <div class="stat">
+                <span>🍖 Hunger:</span>
+                <div class="stat-bar">
+                    <div id="hunger-bar" class="stat-fill"></div>
+                </div>
+                <span id="hunger-text">0%</span>
+            </div>
+            <div class="stat">
+                <span>🧼 Cleanliness:</span>
+                <div class="stat-bar">
+                    <div id="clean-bar" class="stat-fill"></div>
+                </div>
+                <span id="clean-text">100%</span>
+            </div>
+        </div>
+
+        <div class="action-menu" id="action-menu" style="display: none;">
+            <h3>What do you want to do?</h3>
+            <button class="action-btn pet-action" onclick="game.petAnimal()">
+                <span class="btn-icon">👋</span>
+                <span>Pet</span>
+            </button>
+            <button class="action-btn feed-action" onclick="game.feedAnimal()">
+                <span class="btn-icon">🍖</span>
+                <span>Feed</span>
+            </button>
+            <button class="action-btn wash-action" onclick="game.washAnimal()">
+                <span class="btn-icon">🛁</span>
+                <span>Wash</span>
+            </button>
+            <button class="action-btn play-action" onclick="game.playWithAnimal()">
+                <span class="btn-icon">⚽</span>
+                <span>Play</span>
+            </button>
+            <button class="close-btn" onclick="game.closeActionMenu()">✖ Close</button>
+        </div>
+
+        <div id="notification" class="notification"></div>
+
+        <div id="video-overlay" class="video-overlay" style="display: none;">
+            <div class="video-container">
+                <button class="video-close-btn" onclick="game.closeVideo()">✖ Close</button>
+                <canvas id="animation-canvas" width="800" height="600"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="game-canvas"></canvas>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="game3d.js"></script>
+</body>
+</html>
