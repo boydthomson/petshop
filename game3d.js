@@ -1584,13 +1584,279 @@ class PetShopGame {
 
         videoOverlay.style.display = 'flex';
 
-        this.animationStartTime = Date.now();
-        this.animationRunning = true;
-        this.animatePlayScene(ctx, animalType);
+        // For dogs, use interactive ball throwing game
+        if (animalType === 'dog') {
+            this.startInteractiveDogGame(canvas, ctx);
+        } else {
+            // For other animals, use animated scenes
+            this.animationStartTime = Date.now();
+            this.animationRunning = true;
+            this.animatePlayScene(ctx, animalType);
 
-        setTimeout(() => {
-            this.closeVideo();
-        }, 30000);
+            setTimeout(() => {
+                this.closeVideo();
+            }, 30000);
+        }
+    }
+
+    startInteractiveDogGame(canvas, ctx) {
+        // Initialize ball throwing game state
+        this.ballGame = {
+            ball: {
+                x: canvas.width / 2,
+                y: canvas.height - 100,
+                vx: 0,
+                vy: 0,
+                radius: 20,
+                isDragging: false,
+                isThrown: false
+            },
+            dog: {
+                x: 150,
+                y: canvas.height - 150,
+                targetX: 150,
+                speed: 3,
+                hasBall: false
+            },
+            dragStart: { x: 0, y: 0 },
+            score: 0
+        };
+
+        // Mouse event handlers for ball throwing
+        const mouseDownHandler = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+            const ball = this.ballGame.ball;
+            const dist = Math.sqrt((mouseX - ball.x) ** 2 + (mouseY - ball.y) ** 2);
+
+            if (dist < ball.radius && !ball.isThrown) {
+                ball.isDragging = true;
+                this.ballGame.dragStart = { x: mouseX, y: mouseY };
+            }
+        };
+
+        const mouseMoveHandler = (e) => {
+            if (!this.ballGame.ball.isDragging) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+            // Show trajectory line
+            this.ballGame.currentMouse = { x: mouseX, y: mouseY };
+        };
+
+        const mouseUpHandler = (e) => {
+            if (!this.ballGame.ball.isDragging) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+            const ball = this.ballGame.ball;
+            ball.isDragging = false;
+
+            // Calculate throw velocity based on flick
+            const dx = mouseX - this.ballGame.dragStart.x;
+            const dy = mouseY - this.ballGame.dragStart.y;
+
+            ball.vx = dx * 0.3;
+            ball.vy = dy * 0.3;
+            ball.isThrown = true;
+
+            this.ballGame.currentMouse = null;
+        };
+
+        canvas.addEventListener('mousedown', mouseDownHandler);
+        canvas.addEventListener('mousemove', mouseMoveHandler);
+        canvas.addEventListener('mouseup', mouseUpHandler);
+
+        // Store handlers for cleanup
+        this.ballGameHandlers = { mouseDownHandler, mouseMoveHandler, mouseUpHandler };
+
+        // Start game loop
+        this.animationRunning = true;
+        this.animateInteractiveDogGame(canvas, ctx);
+    }
+
+    animateInteractiveDogGame(canvas, ctx) {
+        if (!this.animationRunning) return;
+
+        const game = this.ballGame;
+        const ball = game.ball;
+        const dog = game.dog;
+
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw field background
+        this.drawFieldBackground(ctx, canvas);
+
+        // Update ball physics
+        if (ball.isThrown) {
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+            ball.vy += 0.5; // gravity
+
+            // Bounce off walls
+            if (ball.x - ball.radius < 0 || ball.x + ball.radius > canvas.width) {
+                ball.vx *= -0.7;
+                ball.x = Math.max(ball.radius, Math.min(canvas.width - ball.radius, ball.x));
+            }
+
+            // Ground bounce
+            if (ball.y + ball.radius > canvas.height - 100) {
+                ball.y = canvas.height - 100 - ball.radius;
+                ball.vy *= -0.6;
+                ball.vx *= 0.8;
+
+                if (Math.abs(ball.vy) < 1) {
+                    ball.vy = 0;
+                    ball.vx *= 0.9;
+                }
+            }
+
+            // Check if dog caught the ball
+            const dogDist = Math.sqrt((ball.x - dog.x) ** 2 + (ball.y - dog.y) ** 2);
+            if (dogDist < 60 && !dog.hasBall) {
+                dog.hasBall = true;
+                ball.isThrown = false;
+                game.score++;
+
+                // Dog returns ball
+                setTimeout(() => {
+                    ball.x = canvas.width / 2;
+                    ball.y = canvas.height - 100;
+                    ball.vx = 0;
+                    ball.vy = 0;
+                    dog.hasBall = false;
+                    dog.targetX = 150;
+                }, 2000);
+            }
+        }
+
+        // Update dog AI
+        if (ball.isThrown && !dog.hasBall) {
+            dog.targetX = ball.x;
+        }
+
+        if (Math.abs(dog.x - dog.targetX) > 5) {
+            dog.x += (dog.targetX - dog.x) * 0.05;
+        }
+
+        // Draw ground
+        ctx.fillStyle = '#228B22';
+        ctx.fillRect(0, canvas.height - 100, canvas.width, 100);
+
+        // Draw dog
+        this.drawInteractiveDog(ctx, dog.x, dog.y, dog.hasBall);
+
+        // Draw ball
+        if (!dog.hasBall) {
+            ctx.fillStyle = '#FF0000';
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Highlight/glow effect
+            ctx.strokeStyle = ball.isDragging ? '#FFFF00' : '#AA0000';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Draw trajectory line when dragging
+            if (ball.isDragging && this.ballGame.currentMouse) {
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(ball.x, ball.y);
+                ctx.lineTo(this.ballGame.currentMouse.x, this.ballGame.currentMouse.y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+        }
+
+        // Draw instructions and score
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 24px Arial';
+        ctx.fillText('Click and flick the red ball!', 20, 40);
+        ctx.fillText(`Throws: ${game.score}`, 20, 70);
+
+        requestAnimationFrame(() => this.animateInteractiveDogGame(canvas, ctx));
+    }
+
+    drawFieldBackground(ctx, canvas) {
+        // Sky
+        const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.7);
+        skyGradient.addColorStop(0, '#87CEEB');
+        skyGradient.addColorStop(1, '#E0F6FF');
+        ctx.fillStyle = skyGradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height - 100);
+
+        // Sun
+        ctx.fillStyle = '#FFD700';
+        ctx.beginPath();
+        ctx.arc(700, 80, 40, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Grass texture
+        ctx.fillStyle = '#2E7D32';
+        for (let i = 0; i < canvas.width; i += 15) {
+            const grassHeight = 8 + Math.random() * 4;
+            ctx.fillRect(i, canvas.height - 100 - grassHeight, 2, grassHeight);
+        }
+    }
+
+    drawInteractiveDog(ctx, x, y, hasBall) {
+        // Dog body
+        ctx.fillStyle = '#8B4513';
+        ctx.fillRect(x - 40, y - 20, 80, 40);
+
+        // Dog head
+        ctx.beginPath();
+        ctx.arc(x + 40, y, 25, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Ears
+        ctx.fillRect(x + 30, y - 30, 10, 20);
+        ctx.fillRect(x + 50, y - 30, 10, 20);
+
+        // Eye
+        ctx.fillStyle = '#FFF';
+        ctx.beginPath();
+        ctx.arc(x + 50, y - 5, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(x + 50, y - 5, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Legs
+        ctx.fillStyle = '#654321';
+        ctx.fillRect(x - 30, y + 15, 10, 30);
+        ctx.fillRect(x - 10, y + 15, 10, 30);
+        ctx.fillRect(x + 10, y + 15, 10, 30);
+        ctx.fillRect(x + 30, y + 15, 10, 30);
+
+        // Tail wagging
+        const tailWag = Math.sin(Date.now() * 0.01) * 10;
+        ctx.fillStyle = '#8B4513';
+        ctx.save();
+        ctx.translate(x - 40, y);
+        ctx.rotate(tailWag * Math.PI / 180);
+        ctx.fillRect(-15, -5, 20, 10);
+        ctx.restore();
+
+        // If dog has ball, show it in mouth
+        if (hasBall) {
+            ctx.fillStyle = '#FF0000';
+            ctx.beginPath();
+            ctx.arc(x + 55, y + 5, 10, 0, Math.PI * 2);
+            ctx.fill();
+        }
     }
 
     animatePlayScene(ctx, animalType) {
@@ -2189,8 +2455,21 @@ class PetShopGame {
 
     closeVideo() {
         const videoOverlay = document.getElementById('video-overlay');
+        const canvas = document.getElementById('animation-canvas');
+
         this.animationRunning = false;
         videoOverlay.style.display = 'none';
+
+        // Clean up ball game event listeners if they exist
+        if (this.ballGameHandlers) {
+            canvas.removeEventListener('mousedown', this.ballGameHandlers.mouseDownHandler);
+            canvas.removeEventListener('mousemove', this.ballGameHandlers.mouseMoveHandler);
+            canvas.removeEventListener('mouseup', this.ballGameHandlers.mouseUpHandler);
+            this.ballGameHandlers = null;
+        }
+
+        // Clear ball game state
+        this.ballGame = null;
     }
 
     animateAnimal(animal, type) {
