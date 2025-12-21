@@ -1590,6 +1590,9 @@ class PetShopGame {
         } else if (animalType === 'cat') {
             // For cats, use interactive mouse toy game
             this.startInteractiveCatGame(canvas, ctx);
+        } else if (animalType === 'rabbit') {
+            // For rabbits, use interactive carrot game
+            this.startInteractiveRabbitGame(canvas, ctx);
         } else {
             // For other animals, use animated scenes
             this.animationStartTime = Date.now();
@@ -2150,6 +2153,309 @@ class PetShopGame {
         ctx.fillStyle = 'rgba(139, 69, 19, 0.4)';
         for (let i = 0; i < 4; i++) {
             ctx.fillRect(x - 30 + i * 15, y - 12, 8, 25);
+        }
+    }
+
+    startInteractiveRabbitGame(canvas, ctx) {
+        // Initialize rabbit carrot game state
+        this.rabbitGame = {
+            carrot: {
+                x: canvas.width / 2,
+                y: canvas.height / 2,
+                width: 20,
+                height: 50
+            },
+            rabbit: {
+                x: 200,
+                y: canvas.height - 180,
+                targetX: 200,
+                targetY: canvas.height - 180,
+                speed: 3.5,
+                isHopping: false,
+                hopTime: 0,
+                isEating: false,
+                eatTime: 0
+            },
+            mouse: {
+                x: canvas.width / 2,
+                y: canvas.height / 2
+            },
+            nibbles: 0
+        };
+
+        // Mouse event handlers for moving the carrot
+        const mouseMoveHandler = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+            // Update carrot position to follow mouse
+            this.rabbitGame.carrot.x = mouseX;
+            this.rabbitGame.carrot.y = mouseY;
+            this.rabbitGame.mouse.x = mouseX;
+            this.rabbitGame.mouse.y = mouseY;
+        };
+
+        canvas.addEventListener('mousemove', mouseMoveHandler);
+
+        // Store handler for cleanup
+        this.rabbitGameHandlers = { mouseMoveHandler };
+
+        // Start game loop
+        this.animationRunning = true;
+        this.animateInteractiveRabbitGame(canvas, ctx);
+    }
+
+    animateInteractiveRabbitGame(canvas, ctx) {
+        if (!this.animationRunning) return;
+
+        const game = this.rabbitGame;
+        const carrot = game.carrot;
+        const rabbit = game.rabbit;
+
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw field background
+        this.drawFieldBackground(ctx, canvas);
+
+        // Update rabbit AI - chase the carrot
+        const dx = carrot.x - rabbit.x;
+        const dy = carrot.y - rabbit.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance > 40) {
+            rabbit.targetX = carrot.x;
+            rabbit.targetY = carrot.y;
+            rabbit.isEating = false;
+
+            // Move rabbit towards target with hopping
+            if (!rabbit.isHopping && Math.random() > 0.95) {
+                rabbit.isHopping = true;
+                rabbit.hopTime = 0;
+            }
+
+            if (rabbit.isHopping) {
+                const moveX = (rabbit.targetX - rabbit.x) * 0.12;
+                const moveY = (rabbit.targetY - rabbit.y) * 0.12;
+                rabbit.x += moveX;
+                rabbit.y += moveY;
+            } else {
+                const moveX = (rabbit.targetX - rabbit.x) * 0.04;
+                const moveY = (rabbit.targetY - rabbit.y) * 0.04;
+                rabbit.x += moveX;
+                rabbit.y += moveY;
+            }
+        } else {
+            // Rabbit is close - start eating!
+            if (!rabbit.isEating) {
+                rabbit.isEating = true;
+                rabbit.eatTime = 0;
+                game.nibbles++;
+            }
+        }
+
+        // Update hop animation
+        if (rabbit.isHopping) {
+            rabbit.hopTime += 0.15;
+            if (rabbit.hopTime > Math.PI) {
+                rabbit.isHopping = false;
+                rabbit.hopTime = 0;
+            }
+        }
+
+        // Update eating animation
+        if (rabbit.isEating) {
+            rabbit.eatTime += 0.05;
+        }
+
+        // Draw ground
+        ctx.fillStyle = '#228B22';
+        ctx.fillRect(0, canvas.height - 100, canvas.width, 100);
+
+        // Draw carrot
+        this.drawCarrot(ctx, carrot.x, carrot.y);
+
+        // Draw rabbit
+        const hopHeight = rabbit.isHopping ? Math.sin(rabbit.hopTime) * 50 : 0;
+        this.drawInteractiveRabbit(ctx, rabbit.x, rabbit.y - hopHeight, rabbit.isEating, rabbit.eatTime);
+
+        // Draw instructions and score
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 24px Arial';
+        ctx.fillText('Move the carrot around!', 20, 40);
+        ctx.fillText(`Nibbles: ${game.nibbles}`, 20, 70);
+
+        requestAnimationFrame(() => this.animateInteractiveRabbitGame(canvas, ctx));
+    }
+
+    drawCarrot(ctx, x, y) {
+        // Carrot body (orange)
+        ctx.fillStyle = '#FF8C00';
+        ctx.beginPath();
+        ctx.moveTo(x, y + 50);
+        ctx.lineTo(x - 12, y + 10);
+        ctx.lineTo(x - 8, y);
+        ctx.lineTo(x, y - 5);
+        ctx.lineTo(x + 8, y);
+        ctx.lineTo(x + 12, y + 10);
+        ctx.closePath();
+        ctx.fill();
+
+        // Carrot details (darker orange lines)
+        ctx.strokeStyle = '#D2691E';
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.moveTo(x - 10 + i * 10, y + 15);
+            ctx.lineTo(x - 5 + i * 5, y + 35);
+            ctx.stroke();
+        }
+
+        // Carrot greens/leaves
+        ctx.fillStyle = '#228B22';
+        for (let i = 0; i < 5; i++) {
+            const angle = (i / 5) * Math.PI * 2 - Math.PI / 2;
+            const leafX = x + Math.cos(angle) * 8;
+            const leafY = y - 5 + Math.sin(angle) * 8;
+
+            ctx.beginPath();
+            ctx.moveTo(x, y - 5);
+            ctx.quadraticCurveTo(
+                x + Math.cos(angle) * 12,
+                y - 10 + Math.sin(angle) * 12,
+                leafX,
+                leafY - 15
+            );
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#228B22';
+            ctx.stroke();
+        }
+
+        // Highlight on carrot
+        ctx.fillStyle = 'rgba(255, 200, 100, 0.4)';
+        ctx.beginPath();
+        ctx.ellipse(x - 3, y + 20, 5, 15, 0.3, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    drawInteractiveRabbit(ctx, x, y, isEating, eatTime) {
+        // Rabbit body (fluffy white)
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.ellipse(x, y, 40, 35, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Rabbit head
+        ctx.beginPath();
+        ctx.arc(x + 30, y - 10, 28, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Long bunny ears
+        ctx.fillStyle = '#F5F5F5';
+        ctx.beginPath();
+        ctx.ellipse(x + 20, y - 35, 8, 35, -0.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(x + 38, y - 35, 8, 35, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Pink inner ears
+        ctx.fillStyle = '#FFB6C1';
+        ctx.beginPath();
+        ctx.ellipse(x + 20, y - 35, 4, 25, -0.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(x + 38, y - 35, 4, 25, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Rabbit eyes (big and cute)
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(x + 25, y - 15, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x + 38, y - 15, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eye shine
+        ctx.fillStyle = '#FFF';
+        ctx.beginPath();
+        ctx.arc(x + 26, y - 17, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x + 39, y - 17, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Pink nose
+        ctx.fillStyle = '#FFB6C1';
+        ctx.beginPath();
+        ctx.arc(x + 48, y - 5, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Whiskers
+        ctx.strokeStyle = '#DDD';
+        ctx.lineWidth = 1.5;
+        for (let i = -1; i <= 1; i++) {
+            ctx.beginPath();
+            ctx.moveTo(x + 48, y - 5 + i * 3);
+            ctx.lineTo(x + 70, y - 8 + i * 4);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x + 48, y - 5 + i * 3);
+            ctx.lineTo(x + 28, y - 8 + i * 4);
+            ctx.stroke();
+        }
+
+        // Buck teeth
+        ctx.fillStyle = '#FFFAF0';
+        ctx.fillRect(x + 44, y, 4, 6);
+        ctx.fillRect(x + 50, y, 4, 6);
+
+        // Eating animation
+        if (isEating) {
+            const mouthOpen = Math.abs(Math.sin(eatTime * 8)) * 3;
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(x + 48, y + 2, 5, 0.2, Math.PI - 0.2);
+            ctx.stroke();
+        }
+
+        // Fluffy tail
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.arc(x - 38, y + 5, 12, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Rabbit feet (back legs visible)
+        ctx.fillStyle = '#F0F0F0';
+        ctx.beginPath();
+        ctx.ellipse(x - 20, y + 30, 15, 10, 0.3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(x + 10, y + 30, 15, 10, -0.3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Front paws
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.ellipse(x + 20, y + 25, 8, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(x + 35, y + 25, 8, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Paw pads
+        ctx.fillStyle = '#FFB6C1';
+        for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.arc(x - 20 + i * 6, y + 38, 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(x + 10 + i * 6, y + 38, 2, 0, Math.PI * 2);
+            ctx.fill();
         }
     }
 
@@ -2768,9 +3074,16 @@ class PetShopGame {
             this.catGameHandlers = null;
         }
 
+        // Clean up rabbit game event listeners if they exist
+        if (this.rabbitGameHandlers) {
+            canvas.removeEventListener('mousemove', this.rabbitGameHandlers.mouseMoveHandler);
+            this.rabbitGameHandlers = null;
+        }
+
         // Clear game states
         this.ballGame = null;
         this.catGame = null;
+        this.rabbitGame = null;
     }
 
     animateAnimal(animal, type) {
