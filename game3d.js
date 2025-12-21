@@ -32,22 +32,30 @@ class PetShopGame {
     setupScene() {
         const canvas = document.getElementById('game-canvas');
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0xb8d4e8);
-        this.scene.fog = new THREE.Fog(0xb8d4e8, 30, 70);
+
+        // More realistic warm indoor background
+        this.scene.background = new THREE.Color(0xE8D4B8);
+        this.scene.fog = new THREE.Fog(0xE8D4B8, 35, 65);
 
         this.camera = new THREE.PerspectiveCamera(
-            75,
+            70,
             window.innerWidth / window.innerHeight,
             0.1,
             1000
         );
 
-        this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        this.renderer = new THREE.WebGLRenderer({
+            canvas,
+            antialias: true,
+            powerPreference: "high-performance"
+        });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 1.2;
+        this.renderer.toneMappingExposure = 1.3;
+        this.renderer.outputEncoding = THREE.sRGBEncoding;
     }
 
     createPetStore() {
@@ -62,12 +70,19 @@ class PetShopGame {
         floor.receiveShadow = true;
         this.scene.add(floor);
 
+        // Enhanced realistic wood planks with grain variations
         for (let i = 0; i < 50; i += 5) {
             for (let j = 0; j < 50; j += 2) {
                 const plankGeometry = new THREE.PlaneGeometry(1.8, 4.8);
+
+                // Random wood colors with more variation
+                const hue = 0.08 + Math.random() * 0.03;
+                const saturation = 0.35 + Math.random() * 0.15;
+                const lightness = 0.30 + Math.random() * 0.15;
+
                 const plankMaterial = new THREE.MeshStandardMaterial({
-                    color: new THREE.Color().setHSL(0.08 + Math.random() * 0.02, 0.4, 0.35 + Math.random() * 0.1),
-                    roughness: 0.85,
+                    color: new THREE.Color().setHSL(hue, saturation, lightness),
+                    roughness: 0.75 + Math.random() * 0.15,
                     metalness: 0.0
                 });
                 const plank = new THREE.Mesh(plankGeometry, plankMaterial);
@@ -75,6 +90,21 @@ class PetShopGame {
                 plank.position.set(i - 25, 0.01, j - 25);
                 plank.receiveShadow = true;
                 this.scene.add(plank);
+
+                // Wood grain lines
+                if (Math.random() > 0.6) {
+                    const grainGeo = new THREE.PlaneGeometry(0.1, 4.5);
+                    const grainMat = new THREE.MeshStandardMaterial({
+                        color: new THREE.Color().setHSL(hue, saturation, lightness - 0.08),
+                        roughness: 0.9,
+                        transparent: true,
+                        opacity: 0.4
+                    });
+                    const grain = new THREE.Mesh(grainGeo, grainMat);
+                    grain.rotation.x = -Math.PI / 2;
+                    grain.position.set(i - 25 + (Math.random() - 0.5) * 1.5, 0.011, j - 25);
+                    this.scene.add(grain);
+                }
             }
         }
 
@@ -89,8 +119,8 @@ class PetShopGame {
     createCeiling() {
         const ceilingGeometry = new THREE.PlaneGeometry(50, 50);
         const ceilingMaterial = new THREE.MeshStandardMaterial({
-            color: 0xf5f5f5,
-            roughness: 0.8,
+            color: 0xFAFAFA,
+            roughness: 0.85,
             side: THREE.DoubleSide
         });
         const ceiling = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
@@ -98,12 +128,46 @@ class PetShopGame {
         ceiling.position.y = 10;
         ceiling.receiveShadow = true;
         this.scene.add(ceiling);
+
+        // Ceiling tiles for realism
+        for (let i = -24; i < 25; i += 4) {
+            for (let j = -24; j < 25; j += 4) {
+                const tileGeo = new THREE.PlaneGeometry(3.9, 3.9);
+                const tileMat = new THREE.MeshStandardMaterial({
+                    color: new THREE.Color().setHSL(0, 0, 0.94 + Math.random() * 0.04),
+                    roughness: 0.9,
+                    side: THREE.DoubleSide
+                });
+                const tile = new THREE.Mesh(tileGeo, tileMat);
+                tile.rotation.x = Math.PI / 2;
+                tile.position.set(i, 9.99, j);
+                this.scene.add(tile);
+            }
+        }
+
+        // Ceiling lights/fixtures
+        for (let i = -15; i <= 15; i += 15) {
+            for (let j = -15; j <= 15; j += 15) {
+                const lightFixtureGeo = new THREE.CylinderGeometry(1.2, 1.2, 0.3, 20);
+                const lightFixtureMat = new THREE.MeshStandardMaterial({
+                    color: 0xEEEEEE,
+                    roughness: 0.3,
+                    metalness: 0.5,
+                    emissive: 0xFFFFDD,
+                    emissiveIntensity: 0.4
+                });
+                const lightFixture = new THREE.Mesh(lightFixtureGeo, lightFixtureMat);
+                lightFixture.position.set(i, 9.7, j);
+                lightFixture.castShadow = true;
+                this.scene.add(lightFixture);
+            }
+        }
     }
 
     createWalls() {
         const wallMaterial = new THREE.MeshStandardMaterial({
-            color: 0xf4e4c1,
-            roughness: 0.85
+            color: 0xF5E6D3,
+            roughness: 0.90
         });
 
         const backWall = new THREE.Mesh(
@@ -133,13 +197,76 @@ class PetShopGame {
         rightWall.castShadow = true;
         this.scene.add(rightWall);
 
+        // Enhanced baseboards with detail
         const baseboard = new THREE.Mesh(
-            new THREE.BoxGeometry(50, 0.3, 0.2),
-            new THREE.MeshStandardMaterial({ color: 0x5d4e37, roughness: 0.7 })
+            new THREE.BoxGeometry(50, 0.4, 0.25),
+            new THREE.MeshStandardMaterial({
+                color: 0x5d4e37,
+                roughness: 0.6,
+                metalness: 0.0
+            })
         );
-        baseboard.position.set(0, 0.15, -24.85);
+        baseboard.position.set(0, 0.2, -24.85);
         baseboard.castShadow = true;
         this.scene.add(baseboard);
+
+        // Left wall baseboard
+        const baseboardLeft = new THREE.Mesh(
+            new THREE.BoxGeometry(0.25, 0.4, 50),
+            new THREE.MeshStandardMaterial({
+                color: 0x5d4e37,
+                roughness: 0.6
+            })
+        );
+        baseboardLeft.position.set(-24.85, 0.2, 0);
+        baseboardLeft.castShadow = true;
+        this.scene.add(baseboardLeft);
+
+        // Right wall baseboard
+        const baseboardRight = new THREE.Mesh(
+            new THREE.BoxGeometry(0.25, 0.4, 50),
+            new THREE.MeshStandardMaterial({
+                color: 0x5d4e37,
+                roughness: 0.6
+            })
+        );
+        baseboardRight.position.set(24.85, 0.2, 0);
+        baseboardRight.castShadow = true;
+        this.scene.add(baseboardRight);
+
+        // Wall art/posters for realism
+        this.addWallDecor();
+    }
+
+    addWallDecor() {
+        // Pet shop posters on back wall
+        const posterPositions = [
+            { x: -12, y: 5.5 },
+            { x: 0, y: 6 },
+            { x: 12, y: 5.5 }
+        ];
+
+        posterPositions.forEach((pos, index) => {
+            const frameGeo = new THREE.PlaneGeometry(2.5, 3);
+            const frameMat = new THREE.MeshStandardMaterial({
+                color: index === 1 ? 0x4169E1 : (index === 0 ? 0xFF6347 : 0x32CD32),
+                roughness: 0.4
+            });
+            const frame = new THREE.Mesh(frameGeo, frameMat);
+            frame.position.set(pos.x, pos.y, -24.7);
+            frame.castShadow = true;
+            this.scene.add(frame);
+
+            // Inner poster content
+            const posterGeo = new THREE.PlaneGeometry(2.2, 2.7);
+            const posterMat = new THREE.MeshStandardMaterial({
+                color: 0xFFFAF0,
+                roughness: 0.7
+            });
+            const poster = new THREE.Mesh(posterGeo, posterMat);
+            poster.position.set(pos.x, pos.y, -24.65);
+            this.scene.add(poster);
+        });
     }
 
     createWindowsAndDoor() {
@@ -567,17 +694,71 @@ class PetShopGame {
     addSpeciesFeatures(group, animalType, bodyMaterial, color) {
         switch(animalType) {
             case 'dog':
-                const dogEarGeo = new THREE.BoxGeometry(0.4, 0.8, 0.1);
+                // Realistic floppy ears with inner detail
+                const dogEarGeo = new THREE.BoxGeometry(0.4, 0.9, 0.12);
                 const leftDogEar = new THREE.Mesh(dogEarGeo, bodyMaterial);
-                leftDogEar.position.set(-0.6, 0.6, 0.8);
-                leftDogEar.rotation.set(0, 0, 0.6);
+                leftDogEar.position.set(-0.6, 0.5, 0.8);
+                leftDogEar.rotation.set(0.3, 0, 0.7);
                 leftDogEar.castShadow = true;
                 group.add(leftDogEar);
+
+                // Inner ear (lighter color)
+                const innerEarGeo = new THREE.BoxGeometry(0.25, 0.6, 0.1);
+                const innerEarMaterial = new THREE.MeshStandardMaterial({
+                    color: new THREE.Color(color).offsetHSL(0, -0.2, 0.4),
+                    roughness: 0.9
+                });
+                const leftInnerEar = new THREE.Mesh(innerEarGeo, innerEarMaterial);
+                leftInnerEar.position.set(-0.6, 0.45, 0.85);
+                leftInnerEar.rotation.set(0.3, 0, 0.7);
+                group.add(leftInnerEar);
+
                 const rightDogEar = new THREE.Mesh(dogEarGeo, bodyMaterial);
-                rightDogEar.position.set(0.6, 0.6, 0.8);
-                rightDogEar.rotation.set(0, 0, -0.6);
+                rightDogEar.position.set(0.6, 0.5, 0.8);
+                rightDogEar.rotation.set(0.3, 0, -0.7);
                 rightDogEar.castShadow = true;
                 group.add(rightDogEar);
+
+                const rightInnerEar = new THREE.Mesh(innerEarGeo, innerEarMaterial);
+                rightInnerEar.position.set(0.6, 0.45, 0.85);
+                rightInnerEar.rotation.set(0.3, 0, -0.7);
+                group.add(rightInnerEar);
+
+                // Dog collar
+                const collarGeo = new THREE.TorusGeometry(0.55, 0.08, 8, 20);
+                const collarMaterial = new THREE.MeshStandardMaterial({
+                    color: 0xFF0000,
+                    roughness: 0.4,
+                    metalness: 0.6
+                });
+                const collar = new THREE.Mesh(collarGeo, collarMaterial);
+                collar.position.set(0, 0.2, 0.9);
+                collar.rotation.x = Math.PI / 2;
+                collar.castShadow = true;
+                group.add(collar);
+
+                // Collar tag
+                const tagGeo = new THREE.BoxGeometry(0.15, 0.2, 0.03);
+                const tagMaterial = new THREE.MeshStandardMaterial({
+                    color: 0xC0C0C0,
+                    roughness: 0.2,
+                    metalness: 0.9
+                });
+                const tag = new THREE.Mesh(tagGeo, tagMaterial);
+                tag.position.set(0, 0.05, 1.15);
+                group.add(tag);
+
+                // Tongue (hanging out slightly)
+                const tongueGeo = new THREE.BoxGeometry(0.15, 0.08, 0.3);
+                const tongueMaterial = new THREE.MeshStandardMaterial({
+                    color: 0xFF69B4,
+                    roughness: 0.7
+                });
+                const tongue = new THREE.Mesh(tongueGeo, tongueMaterial);
+                tongue.position.set(0, 0.15, 1.55);
+                tongue.rotation.x = 0.3;
+                group.add(tongue);
+
                 break;
 
             case 'cat':
@@ -665,31 +846,152 @@ class PetShopGame {
                 break;
 
             case 'rabbit':
-                const rabbitEarGeo = new THREE.CylinderGeometry(0.15, 0.2, 1.2, 12);
+                // Long realistic bunny ears
+                const rabbitEarGeo = new THREE.CylinderGeometry(0.12, 0.18, 1.4, 12);
                 const leftRabbitEar = new THREE.Mesh(rabbitEarGeo, bodyMaterial);
-                leftRabbitEar.position.set(-0.3, 1.4, 0.7);
-                leftRabbitEar.rotation.set(0.3, 0, 0.1);
+                leftRabbitEar.position.set(-0.25, 1.5, 0.65);
+                leftRabbitEar.rotation.set(0.4, 0, 0.15);
                 leftRabbitEar.castShadow = true;
                 group.add(leftRabbitEar);
+
+                // Pink inner ear
+                const rabbitInnerEarGeo = new THREE.CylinderGeometry(0.08, 0.12, 1.2, 12);
+                const rabbitInnerEarMaterial = new THREE.MeshStandardMaterial({
+                    color: 0xFFB6C1,
+                    roughness: 0.8
+                });
+                const leftRabbitInnerEar = new THREE.Mesh(rabbitInnerEarGeo, rabbitInnerEarMaterial);
+                leftRabbitInnerEar.position.set(-0.25, 1.5, 0.7);
+                leftRabbitInnerEar.rotation.set(0.4, 0, 0.15);
+                group.add(leftRabbitInnerEar);
+
                 const rightRabbitEar = new THREE.Mesh(rabbitEarGeo, bodyMaterial);
-                rightRabbitEar.position.set(0.3, 1.4, 0.7);
-                rightRabbitEar.rotation.set(0.3, 0, -0.1);
+                rightRabbitEar.position.set(0.25, 1.5, 0.65);
+                rightRabbitEar.rotation.set(0.4, 0, -0.15);
                 rightRabbitEar.castShadow = true;
                 group.add(rightRabbitEar);
+
+                const rightRabbitInnerEar = new THREE.Mesh(rabbitInnerEarGeo, rabbitInnerEarMaterial);
+                rightRabbitInnerEar.position.set(0.25, 1.5, 0.7);
+                rightRabbitInnerEar.rotation.set(0.4, 0, -0.15);
+                group.add(rightRabbitInnerEar);
+
+                // Bunny whiskers
+                const rabbitWhiskerMaterial = new THREE.MeshStandardMaterial({
+                    color: 0xEEEEEE,
+                    roughness: 0.3
+                });
+                const rabbitWhiskerGeo = new THREE.CylinderGeometry(0.008, 0.008, 0.5, 4);
+
+                for (let i = 0; i < 3; i++) {
+                    const whisker = new THREE.Mesh(rabbitWhiskerGeo, rabbitWhiskerMaterial);
+                    whisker.position.set(-0.28, 0.55 + i * 0.04, 1.3);
+                    whisker.rotation.set(0, 0, Math.PI / 2 + (i - 1) * 0.12);
+                    group.add(whisker);
+
+                    const whisker2 = new THREE.Mesh(rabbitWhiskerGeo, rabbitWhiskerMaterial);
+                    whisker2.position.set(0.28, 0.55 + i * 0.04, 1.3);
+                    whisker2.rotation.set(0, 0, Math.PI / 2 - (i - 1) * 0.12);
+                    group.add(whisker2);
+                }
+
+                // Front teeth (buck teeth)
+                const toothGeo = new THREE.BoxGeometry(0.08, 0.15, 0.06);
+                const toothMaterial = new THREE.MeshStandardMaterial({
+                    color: 0xFFFAF0,
+                    roughness: 0.3
+                });
+                const leftTooth = new THREE.Mesh(toothGeo, toothMaterial);
+                leftTooth.position.set(-0.06, 0.45, 1.35);
+                group.add(leftTooth);
+
+                const rightTooth = new THREE.Mesh(toothGeo, toothMaterial);
+                rightTooth.position.set(0.06, 0.45, 1.35);
+                group.add(rightTooth);
+
                 break;
 
             case 'hamster':
-                const hamsterEarGeo = new THREE.SphereGeometry(0.2, 16, 16);
+                // Rounded ears with pink inner
+                const hamsterEarGeo = new THREE.SphereGeometry(0.18, 16, 16);
                 const leftHamsterEar = new THREE.Mesh(hamsterEarGeo, bodyMaterial);
-                leftHamsterEar.position.set(-0.5, 1.0, 0.6);
-                leftHamsterEar.scale.set(1, 0.6, 0.4);
+                leftHamsterEar.position.set(-0.45, 0.95, 0.6);
+                leftHamsterEar.scale.set(1, 0.65, 0.45);
                 leftHamsterEar.castShadow = true;
                 group.add(leftHamsterEar);
+
+                const hamsterInnerEarGeo = new THREE.SphereGeometry(0.12, 12, 12);
+                const hamsterInnerEarMaterial = new THREE.MeshStandardMaterial({
+                    color: 0xFFCCDD,
+                    roughness: 0.9
+                });
+                const leftHamsterInnerEar = new THREE.Mesh(hamsterInnerEarGeo, hamsterInnerEarMaterial);
+                leftHamsterInnerEar.position.set(-0.45, 0.95, 0.65);
+                leftHamsterInnerEar.scale.set(0.8, 0.5, 0.3);
+                group.add(leftHamsterInnerEar);
+
                 const rightHamsterEar = new THREE.Mesh(hamsterEarGeo, bodyMaterial);
-                rightHamsterEar.position.set(0.5, 1.0, 0.6);
-                rightHamsterEar.scale.set(1, 0.6, 0.4);
+                rightHamsterEar.position.set(0.45, 0.95, 0.6);
+                rightHamsterEar.scale.set(1, 0.65, 0.45);
                 rightHamsterEar.castShadow = true;
                 group.add(rightHamsterEar);
+
+                const rightHamsterInnerEar = new THREE.Mesh(hamsterInnerEarGeo, hamsterInnerEarMaterial);
+                rightHamsterInnerEar.position.set(0.45, 0.95, 0.65);
+                rightHamsterInnerEar.scale.set(0.8, 0.5, 0.3);
+                group.add(rightHamsterInnerEar);
+
+                // Chubby cheek pouches
+                const cheekGeo = new THREE.SphereGeometry(0.25, 16, 16);
+                const cheekMaterial = new THREE.MeshStandardMaterial({
+                    color: new THREE.Color(color).offsetHSL(0, 0.1, 0.1),
+                    roughness: 0.95
+                });
+                const leftCheek = new THREE.Mesh(cheekGeo, cheekMaterial);
+                leftCheek.position.set(-0.35, 0.35, 0.85);
+                leftCheek.scale.set(1.1, 0.9, 0.8);
+                leftCheek.castShadow = true;
+                group.add(leftCheek);
+
+                const rightCheek = new THREE.Mesh(cheekGeo, cheekMaterial);
+                rightCheek.position.set(0.35, 0.35, 0.85);
+                rightCheek.scale.set(1.1, 0.9, 0.8);
+                rightCheek.castShadow = true;
+                group.add(rightCheek);
+
+                // Tiny whiskers
+                const hamsterWhiskerMaterial = new THREE.MeshStandardMaterial({
+                    color: 0xFFFFFF,
+                    roughness: 0.2
+                });
+                const hamsterWhiskerGeo = new THREE.CylinderGeometry(0.005, 0.005, 0.35, 4);
+
+                for (let i = 0; i < 3; i++) {
+                    const whisker = new THREE.Mesh(hamsterWhiskerGeo, hamsterWhiskerMaterial);
+                    whisker.position.set(-0.25, 0.38 + i * 0.03, 1.15);
+                    whisker.rotation.set(0, 0, Math.PI / 2 + (i - 1) * 0.1);
+                    group.add(whisker);
+
+                    const whisker2 = new THREE.Mesh(hamsterWhiskerGeo, hamsterWhiskerMaterial);
+                    whisker2.position.set(0.25, 0.38 + i * 0.03, 1.15);
+                    whisker2.rotation.set(0, 0, Math.PI / 2 - (i - 1) * 0.1);
+                    group.add(whisker2);
+                }
+
+                // Tiny front teeth
+                const hamsterToothGeo = new THREE.BoxGeometry(0.04, 0.08, 0.03);
+                const hamsterToothMaterial = new THREE.MeshStandardMaterial({
+                    color: 0xFFFFF0,
+                    roughness: 0.2
+                });
+                const hamsterLeftTooth = new THREE.Mesh(hamsterToothGeo, hamsterToothMaterial);
+                hamsterLeftTooth.position.set(-0.03, 0.32, 1.12);
+                group.add(hamsterLeftTooth);
+
+                const hamsterRightTooth = new THREE.Mesh(hamsterToothGeo, hamsterToothMaterial);
+                hamsterRightTooth.position.set(0.03, 0.32, 1.12);
+                group.add(hamsterRightTooth);
+
                 break;
         }
     }
@@ -819,10 +1121,13 @@ class PetShopGame {
 
         const bodyGeometry = new THREE.SphereGeometry(1, 32, 32);
         bodyGeometry.scale(bodyProportions.bodyScaleX, bodyProportions.bodyScaleY, bodyProportions.bodyScaleZ);
+
+        // Enhanced realistic fur material
         const bodyMaterial = new THREE.MeshStandardMaterial({
             color: color,
-            roughness: 0.95,
-            metalness: 0.0
+            roughness: 0.92,
+            metalness: 0.0,
+            flatShading: false
         });
         const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
         body.castShadow = true;
@@ -834,10 +1139,12 @@ class PetShopGame {
         bellyGeometry.scale(1, 0.8, 0.9);
         const belly = new THREE.Mesh(bellyGeometry, new THREE.MeshStandardMaterial({
             color: new THREE.Color(color).offsetHSL(0, -0.2, 0.3),
-            roughness: 0.95
+            roughness: 0.96,
+            metalness: 0.0
         }));
         belly.position.set(0, bodyProportions.bellyY, 0.3);
         belly.castShadow = true;
+        belly.receiveShadow = true;
         belly.name = 'belly';
         group.add(belly);
 
@@ -1041,41 +1348,75 @@ class PetShopGame {
     }
 
     setupLights() {
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        // Enhanced ambient light for realistic base illumination
+        const ambientLight = new THREE.AmbientLight(0xF5F5DC, 0.4);
         this.scene.add(ambientLight);
 
-        const sunLight = new THREE.DirectionalLight(0xfff4e0, 1.2);
-        sunLight.position.set(15, 25, 15);
+        // Main sun/window light - stronger and warmer
+        const sunLight = new THREE.DirectionalLight(0xFFFAF0, 1.5);
+        sunLight.position.set(20, 30, 20);
         sunLight.castShadow = true;
-        sunLight.shadow.camera.left = -30;
-        sunLight.shadow.camera.right = 30;
-        sunLight.shadow.camera.top = 30;
-        sunLight.shadow.camera.bottom = -30;
+        sunLight.shadow.camera.left = -35;
+        sunLight.shadow.camera.right = 35;
+        sunLight.shadow.camera.top = 35;
+        sunLight.shadow.camera.bottom = -35;
         sunLight.shadow.mapSize.width = 4096;
         sunLight.shadow.mapSize.height = 4096;
-        sunLight.shadow.bias = -0.0001;
+        sunLight.shadow.bias = -0.00015;
+        sunLight.shadow.radius = 2;
         this.scene.add(sunLight);
 
-        const fillLight = new THREE.DirectionalLight(0x87ceeb, 0.3);
-        fillLight.position.set(-10, 10, -10);
+        // Soft fill light from opposite direction
+        const fillLight = new THREE.DirectionalLight(0xB0C4DE, 0.4);
+        fillLight.position.set(-15, 15, -15);
         this.scene.add(fillLight);
 
-        const ceilingLight1 = new THREE.PointLight(0xfff5e1, 0.6, 20);
-        ceilingLight1.position.set(-10, 9, 0);
-        ceilingLight1.castShadow = true;
-        this.scene.add(ceilingLight1);
+        // Multiple ceiling lights for realistic indoor lighting
+        const ceilingLightPositions = [
+            { x: -15, z: -15 },
+            { x: 0, z: -15 },
+            { x: 15, z: -15 },
+            { x: -15, z: 0 },
+            { x: 0, z: 0 },
+            { x: 15, z: 0 },
+            { x: -15, z: 15 },
+            { x: 0, z: 15 },
+            { x: 15, z: 15 }
+        ];
 
-        const ceilingLight2 = new THREE.PointLight(0xfff5e1, 0.6, 20);
-        ceilingLight2.position.set(10, 9, 0);
-        ceilingLight2.castShadow = true;
-        this.scene.add(ceilingLight2);
+        ceilingLightPositions.forEach(pos => {
+            const ceilingLight = new THREE.PointLight(0xFFFAE6, 0.5, 18);
+            ceilingLight.position.set(pos.x, 9, pos.z);
+            ceilingLight.castShadow = true;
+            ceilingLight.shadow.mapSize.width = 1024;
+            ceilingLight.shadow.mapSize.height = 1024;
+            ceilingLight.shadow.bias = -0.0005;
+            this.scene.add(ceilingLight);
+        });
 
-        const spotLight = new THREE.SpotLight(0xffffff, 0.5, 30, Math.PI / 6, 0.5);
-        spotLight.position.set(0, 9.5, 0);
-        spotLight.target.position.set(0, 0, 0);
-        spotLight.castShadow = true;
-        this.scene.add(spotLight);
-        this.scene.add(spotLight.target);
+        // Accent spotlights on animal platforms
+        const animalPositions = [
+            { x: -8, z: 5 },
+            { x: 8, z: 5 },
+            { x: -8, z: -5 },
+            { x: 8, z: -5 }
+        ];
+
+        animalPositions.forEach(pos => {
+            const spotLight = new THREE.SpotLight(0xFFFFFF, 0.6, 15, Math.PI / 8, 0.3);
+            spotLight.position.set(pos.x, 8, pos.z);
+            spotLight.target.position.set(pos.x, 0, pos.z);
+            spotLight.castShadow = true;
+            spotLight.shadow.mapSize.width = 2048;
+            spotLight.shadow.mapSize.height = 2048;
+            this.scene.add(spotLight);
+            this.scene.add(spotLight.target);
+        });
+
+        // Hemisphere light for realistic sky/ground bounce
+        const hemiLight = new THREE.HemisphereLight(0xFFFFFF, 0x8B7355, 0.3);
+        hemiLight.position.set(0, 20, 0);
+        this.scene.add(hemiLight);
     }
 
     setupEventListeners() {
