@@ -581,17 +581,87 @@ class PetShopGame {
                 break;
 
             case 'cat':
+                // Realistic pointed triangular ears
                 const catEarGeo = new THREE.ConeGeometry(0.25, 0.5, 4);
                 const leftCatEar = new THREE.Mesh(catEarGeo, bodyMaterial);
                 leftCatEar.position.set(-0.4, 1.2, 0.9);
                 leftCatEar.rotation.z = -0.2;
                 leftCatEar.castShadow = true;
                 group.add(leftCatEar);
+
+                // Pink inner ear detail
+                const innerEarGeo = new THREE.ConeGeometry(0.15, 0.35, 4);
+                const innerEarMaterial = new THREE.MeshStandardMaterial({
+                    color: 0xFFB6C1,
+                    roughness: 0.8
+                });
+                const leftInnerEar = new THREE.Mesh(innerEarGeo, innerEarMaterial);
+                leftInnerEar.position.set(-0.4, 1.2, 0.95);
+                leftInnerEar.rotation.z = -0.2;
+                leftInnerEar.castShadow = true;
+                group.add(leftInnerEar);
+
                 const rightCatEar = new THREE.Mesh(catEarGeo, bodyMaterial);
                 rightCatEar.position.set(0.4, 1.2, 0.9);
                 rightCatEar.rotation.z = 0.2;
                 rightCatEar.castShadow = true;
                 group.add(rightCatEar);
+
+                const rightInnerEar = new THREE.Mesh(innerEarGeo, innerEarMaterial);
+                rightInnerEar.position.set(0.4, 1.2, 0.95);
+                rightInnerEar.rotation.z = 0.2;
+                rightInnerEar.castShadow = true;
+                group.add(rightInnerEar);
+
+                // Whiskers - long thin cylinders
+                const whiskerMaterial = new THREE.MeshStandardMaterial({
+                    color: 0xFFFFFF,
+                    roughness: 0.3,
+                    metalness: 0.1
+                });
+                const whiskerGeo = new THREE.CylinderGeometry(0.01, 0.01, 0.6, 4);
+
+                // Left whiskers
+                for (let i = 0; i < 3; i++) {
+                    const whisker = new THREE.Mesh(whiskerGeo, whiskerMaterial);
+                    whisker.position.set(-0.35, 0.3 + i * 0.05, 1.4);
+                    whisker.rotation.set(0, 0, Math.PI / 2 + (i - 1) * 0.15);
+                    group.add(whisker);
+                }
+
+                // Right whiskers
+                for (let i = 0; i < 3; i++) {
+                    const whisker = new THREE.Mesh(whiskerGeo, whiskerMaterial);
+                    whisker.position.set(0.35, 0.3 + i * 0.05, 1.4);
+                    whisker.rotation.set(0, 0, Math.PI / 2 - (i - 1) * 0.15);
+                    group.add(whisker);
+                }
+
+                // Stripes for tabby pattern (stored for later use)
+                const stripeColor = new THREE.Color(color).offsetHSL(0, 0, -0.3);
+                const stripeMaterial = new THREE.MeshStandardMaterial({
+                    color: stripeColor,
+                    roughness: 0.95
+                });
+
+                // Head stripes
+                for (let i = 0; i < 4; i++) {
+                    const stripeGeo = new THREE.BoxGeometry(0.08, 0.3, 0.2);
+                    const stripe = new THREE.Mesh(stripeGeo, stripeMaterial);
+                    stripe.position.set(-0.3 + i * 0.2, 0.6, 1.3);
+                    stripe.rotation.y = -0.3;
+                    group.add(stripe);
+                }
+
+                // Body stripes
+                for (let i = 0; i < 5; i++) {
+                    const bodyStripeGeo = new THREE.BoxGeometry(0.15, 0.8, 0.1);
+                    const bodyStripe = new THREE.Mesh(bodyStripeGeo, stripeMaterial);
+                    bodyStripe.position.set(-0.5 + i * 0.25, 0, -0.2 + i * 0.15);
+                    bodyStripe.rotation.y = 0.2;
+                    group.add(bodyStripe);
+                }
+
                 break;
 
             case 'rabbit':
@@ -635,10 +705,10 @@ class PetShopGame {
                 };
             case 'cat':
                 return {
-                    bodyScaleX: 1.1, bodyScaleY: 0.85, bodyScaleZ: 1.3,
-                    bellySize: 0.65, bellyY: -0.25,
-                    headSize: 0.65, headScaleX: 0.95, headScaleY: 0.95, headScaleZ: 0.9,
-                    headY: 0.4, headZ: 1.1
+                    bodyScaleX: 1.3, bodyScaleY: 0.75, bodyScaleZ: 1.4,
+                    bellySize: 0.7, bellyY: -0.22,
+                    headSize: 0.58, headScaleX: 1.0, headScaleY: 0.9, headScaleZ: 0.85,
+                    headY: 0.35, headZ: 1.15
                 };
             case 'rabbit':
                 return {
@@ -669,7 +739,7 @@ class PetShopGame {
             case 'dog':
                 return { topRadius: 0.15, bottomRadius: 0.12, length: 0.7, yPos: -0.6 };
             case 'cat':
-                return { topRadius: 0.12, bottomRadius: 0.10, length: 0.6, yPos: -0.6 };
+                return { topRadius: 0.11, bottomRadius: 0.08, length: 0.65, yPos: -0.55 };
             case 'rabbit':
                 return { topRadius: 0.18, bottomRadius: 0.15, length: 0.5, yPos: -0.65 };
             case 'hamster':
@@ -690,11 +760,25 @@ class PetShopGame {
                 break;
 
             case 'cat':
-                tailGeometry = new THREE.CylinderGeometry(0.10, 0.05, 1.5, 12);
-                tail = new THREE.Mesh(tailGeometry, bodyMaterial);
-                tail.position.set(0, 0.2, -1.3);
-                tail.rotation.x = Math.PI / 5;
-                break;
+                // Create multi-segment fluffy tail
+                const tailGroup = new THREE.Group();
+                const numSegments = 8;
+                for (let i = 0; i < numSegments; i++) {
+                    const segmentRadius = 0.12 - (i * 0.012);
+                    const segmentGeometry = new THREE.SphereGeometry(segmentRadius, 12, 12);
+                    segmentGeometry.scale(1, 1, 1.5);
+                    const segment = new THREE.Mesh(segmentGeometry, bodyMaterial);
+                    segment.position.set(0, -i * 0.2, 0);
+                    segment.castShadow = true;
+                    tailGroup.add(segment);
+                }
+
+                // Position and curve the tail upward
+                tailGroup.position.set(0, 0.1, -1.2);
+                tailGroup.rotation.x = Math.PI / 6;
+                tailGroup.name = 'tail';
+                group.add(tailGroup);
+                return; // Exit early since we added the tail directly
 
             case 'rabbit':
                 tailGeometry = new THREE.SphereGeometry(0.2, 16, 16);
@@ -775,29 +859,110 @@ class PetShopGame {
         snout.castShadow = true;
         group.add(snout);
 
-        const eyeGeometry = new THREE.SphereGeometry(0.12, 16, 16);
-        const eyeWhiteMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
-        const leftEyeWhite = new THREE.Mesh(eyeGeometry, eyeWhiteMaterial);
-        leftEyeWhite.position.set(-0.3, bodyProportions.headY + 0.2, bodyProportions.headZ + 0.45);
-        group.add(leftEyeWhite);
-        const rightEyeWhite = new THREE.Mesh(eyeGeometry, eyeWhiteMaterial);
-        rightEyeWhite.position.set(0.3, bodyProportions.headY + 0.2, bodyProportions.headZ + 0.45);
-        group.add(rightEyeWhite);
+        // Create eyes based on animal type
+        if (animalType === 'cat') {
+            // Cat eyes with slit pupils
+            const catEyeGeometry = new THREE.SphereGeometry(0.15, 16, 16);
+            const catEyeMaterial = new THREE.MeshStandardMaterial({
+                color: 0x88DD44,
+                emissive: 0x224411,
+                emissiveIntensity: 0.3,
+                roughness: 0.2,
+                metalness: 0.1
+            });
+            const leftCatEye = new THREE.Mesh(catEyeGeometry, catEyeMaterial);
+            leftCatEye.position.set(-0.35, bodyProportions.headY + 0.15, bodyProportions.headZ + 0.5);
+            leftCatEye.scale.set(0.8, 1, 1);
+            group.add(leftCatEye);
 
-        const pupilGeometry = new THREE.SphereGeometry(0.08, 16, 16);
-        const pupilMaterial = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.1 });
-        const leftPupil = new THREE.Mesh(pupilGeometry, pupilMaterial);
-        leftPupil.position.set(-0.3, bodyProportions.headY + 0.2, bodyProportions.headZ + 0.55);
-        group.add(leftPupil);
-        const rightPupil = new THREE.Mesh(pupilGeometry, pupilMaterial);
-        rightPupil.position.set(0.3, bodyProportions.headY + 0.2, bodyProportions.headZ + 0.55);
-        group.add(rightPupil);
+            const rightCatEye = new THREE.Mesh(catEyeGeometry, catEyeMaterial);
+            rightCatEye.position.set(0.35, bodyProportions.headY + 0.15, bodyProportions.headZ + 0.5);
+            rightCatEye.scale.set(0.8, 1, 1);
+            group.add(rightCatEye);
 
-        const noseGeometry = new THREE.SphereGeometry(0.12, 16, 16);
-        const noseMaterial = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.4, metalness: 0.1 });
-        const nose = new THREE.Mesh(noseGeometry, noseMaterial);
-        nose.position.set(0, bodyProportions.headY - 0.15, bodyProportions.headZ + 0.65);
-        group.add(nose);
+            // Vertical slit pupils
+            const slitGeometry = new THREE.BoxGeometry(0.02, 0.18, 0.02);
+            const slitMaterial = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.1 });
+
+            const leftSlit = new THREE.Mesh(slitGeometry, slitMaterial);
+            leftSlit.position.set(-0.35, bodyProportions.headY + 0.15, bodyProportions.headZ + 0.58);
+            group.add(leftSlit);
+
+            const rightSlit = new THREE.Mesh(slitGeometry, slitMaterial);
+            rightSlit.position.set(0.35, bodyProportions.headY + 0.15, bodyProportions.headZ + 0.58);
+            group.add(rightSlit);
+
+            // Eye shine/reflection
+            const shineGeometry = new THREE.SphereGeometry(0.03, 8, 8);
+            const shineMaterial = new THREE.MeshStandardMaterial({
+                color: 0xFFFFFF,
+                emissive: 0xFFFFFF,
+                emissiveIntensity: 0.8,
+                roughness: 0.0
+            });
+
+            const leftShine = new THREE.Mesh(shineGeometry, shineMaterial);
+            leftShine.position.set(-0.38, bodyProportions.headY + 0.22, bodyProportions.headZ + 0.6);
+            group.add(leftShine);
+
+            const rightShine = new THREE.Mesh(shineGeometry, shineMaterial);
+            rightShine.position.set(0.32, bodyProportions.headY + 0.22, bodyProportions.headZ + 0.6);
+            group.add(rightShine);
+        } else {
+            // Regular round eyes for other animals
+            const eyeGeometry = new THREE.SphereGeometry(0.12, 16, 16);
+            const eyeWhiteMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+            const leftEyeWhite = new THREE.Mesh(eyeGeometry, eyeWhiteMaterial);
+            leftEyeWhite.position.set(-0.3, bodyProportions.headY + 0.2, bodyProportions.headZ + 0.45);
+            group.add(leftEyeWhite);
+            const rightEyeWhite = new THREE.Mesh(eyeGeometry, eyeWhiteMaterial);
+            rightEyeWhite.position.set(0.3, bodyProportions.headY + 0.2, bodyProportions.headZ + 0.45);
+            group.add(rightEyeWhite);
+
+            const pupilGeometry = new THREE.SphereGeometry(0.08, 16, 16);
+            const pupilMaterial = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.1 });
+            const leftPupil = new THREE.Mesh(pupilGeometry, pupilMaterial);
+            leftPupil.position.set(-0.3, bodyProportions.headY + 0.2, bodyProportions.headZ + 0.55);
+            group.add(leftPupil);
+            const rightPupil = new THREE.Mesh(pupilGeometry, pupilMaterial);
+            rightPupil.position.set(0.3, bodyProportions.headY + 0.2, bodyProportions.headZ + 0.55);
+            group.add(rightPupil);
+        }
+
+        // Create nose based on animal type
+        if (animalType === 'cat') {
+            // Pink triangular cat nose
+            const catNoseGeometry = new THREE.ConeGeometry(0.08, 0.12, 3);
+            const catNoseMaterial = new THREE.MeshStandardMaterial({
+                color: 0xFFB6C1,
+                roughness: 0.3,
+                metalness: 0.1
+            });
+            const catNose = new THREE.Mesh(catNoseGeometry, catNoseMaterial);
+            catNose.position.set(0, bodyProportions.headY - 0.12, bodyProportions.headZ + 0.68);
+            catNose.rotation.x = Math.PI;
+            catNose.castShadow = true;
+            group.add(catNose);
+
+            // Nostrils
+            const nostrilGeometry = new THREE.SphereGeometry(0.02, 8, 8);
+            const nostrilMaterial = new THREE.MeshStandardMaterial({ color: 0x331111, roughness: 0.8 });
+
+            const leftNostril = new THREE.Mesh(nostrilGeometry, nostrilMaterial);
+            leftNostril.position.set(-0.03, bodyProportions.headY - 0.18, bodyProportions.headZ + 0.68);
+            group.add(leftNostril);
+
+            const rightNostril = new THREE.Mesh(nostrilGeometry, nostrilMaterial);
+            rightNostril.position.set(0.03, bodyProportions.headY - 0.18, bodyProportions.headZ + 0.68);
+            group.add(rightNostril);
+        } else {
+            // Regular nose for other animals
+            const noseGeometry = new THREE.SphereGeometry(0.12, 16, 16);
+            const noseMaterial = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.4, metalness: 0.1 });
+            const nose = new THREE.Mesh(noseGeometry, noseMaterial);
+            nose.position.set(0, bodyProportions.headY - 0.15, bodyProportions.headZ + 0.65);
+            group.add(nose);
+        }
 
         this.addSpeciesFeatures(group, animalType, bodyMaterial, color);
 
