@@ -1587,6 +1587,9 @@ class PetShopGame {
         // For dogs, use interactive ball throwing game
         if (animalType === 'dog') {
             this.startInteractiveDogGame(canvas, ctx);
+        } else if (animalType === 'cat') {
+            // For cats, use interactive mouse toy game
+            this.startInteractiveCatGame(canvas, ctx);
         } else {
             // For other animals, use animated scenes
             this.animationStartTime = Date.now();
@@ -1856,6 +1859,297 @@ class PetShopGame {
             ctx.beginPath();
             ctx.arc(x + 55, y + 5, 10, 0, Math.PI * 2);
             ctx.fill();
+        }
+    }
+
+    startInteractiveCatGame(canvas, ctx) {
+        // Initialize cat toy game state
+        this.catGame = {
+            toy: {
+                x: canvas.width / 2,
+                y: canvas.height / 2,
+                radius: 15,
+                stickLength: 100
+            },
+            cat: {
+                x: 200,
+                y: canvas.height - 150,
+                targetX: 200,
+                targetY: canvas.height - 150,
+                speed: 4,
+                isJumping: false,
+                jumpTime: 0
+            },
+            mouse: {
+                x: canvas.width / 2,
+                y: canvas.height / 2
+            },
+            pounces: 0
+        };
+
+        // Mouse event handlers for moving the toy
+        const mouseMoveHandler = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+            // Update toy position to follow mouse
+            this.catGame.toy.x = mouseX;
+            this.catGame.toy.y = mouseY;
+            this.catGame.mouse.x = mouseX;
+            this.catGame.mouse.y = mouseY;
+        };
+
+        canvas.addEventListener('mousemove', mouseMoveHandler);
+
+        // Store handler for cleanup
+        this.catGameHandlers = { mouseMoveHandler };
+
+        // Start game loop
+        this.animationRunning = true;
+        this.animateInteractiveCatGame(canvas, ctx);
+    }
+
+    animateInteractiveCatGame(canvas, ctx) {
+        if (!this.animationRunning) return;
+
+        const game = this.catGame;
+        const toy = game.toy;
+        const cat = game.cat;
+
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw field background
+        this.drawFieldBackground(ctx, canvas);
+
+        // Update cat AI - chase the toy
+        const dx = toy.x - cat.x;
+        const dy = toy.y - cat.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance > 30) {
+            cat.targetX = toy.x;
+            cat.targetY = toy.y;
+
+            // Move cat towards target
+            const moveX = (cat.targetX - cat.x) * 0.08;
+            const moveY = (cat.targetY - cat.y) * 0.08;
+
+            cat.x += moveX;
+            cat.y += moveY;
+        } else {
+            // Cat is close - pounce!
+            if (!cat.isJumping && Math.random() > 0.97) {
+                cat.isJumping = true;
+                cat.jumpTime = 0;
+                game.pounces++;
+            }
+        }
+
+        // Update jump animation
+        if (cat.isJumping) {
+            cat.jumpTime += 0.1;
+            if (cat.jumpTime > Math.PI) {
+                cat.isJumping = false;
+                cat.jumpTime = 0;
+            }
+        }
+
+        // Draw ground
+        ctx.fillStyle = '#228B22';
+        ctx.fillRect(0, canvas.height - 100, canvas.width, 100);
+
+        // Draw stick (from bottom of screen to toy)
+        const stickStartX = game.mouse.x;
+        const stickStartY = 0; // Top of screen
+
+        ctx.strokeStyle = '#8B4513';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(stickStartX, stickStartY);
+        ctx.lineTo(toy.x, toy.y);
+        ctx.stroke();
+
+        // Draw toy mouse at end of stick
+        this.drawToyMouse(ctx, toy.x, toy.y);
+
+        // Draw string/feather effect
+        ctx.strokeStyle = '#DEB887';
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 3; i++) {
+            const offset = Math.sin(Date.now() * 0.01 + i) * 10;
+            ctx.beginPath();
+            ctx.moveTo(toy.x, toy.y);
+            ctx.lineTo(toy.x + offset, toy.y + 20 + i * 10);
+            ctx.stroke();
+        }
+
+        // Draw cat
+        const jumpHeight = cat.isJumping ? Math.sin(cat.jumpTime) * 40 : 0;
+        this.drawInteractiveCat(ctx, cat.x, cat.y - jumpHeight);
+
+        // Draw instructions and score
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 24px Arial';
+        ctx.fillText('Move your mouse to play with the cat!', 20, 40);
+        ctx.fillText(`Pounces: ${game.pounces}`, 20, 70);
+
+        requestAnimationFrame(() => this.animateInteractiveCatGame(canvas, ctx));
+    }
+
+    drawToyMouse(ctx, x, y) {
+        // Toy mouse body
+        ctx.fillStyle = '#A9A9A9';
+        ctx.beginPath();
+        ctx.ellipse(x, y, 12, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Mouse head
+        ctx.beginPath();
+        ctx.arc(x + 10, y, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Pink ears
+        ctx.fillStyle = '#FFB6C1';
+        ctx.beginPath();
+        ctx.arc(x + 8, y - 6, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x + 14, y - 6, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eye
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(x + 13, y - 1, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Nose
+        ctx.fillStyle = '#FFB6C1';
+        ctx.beginPath();
+        ctx.arc(x + 16, y, 1, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Tail
+        ctx.strokeStyle = '#A9A9A9';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x - 12, y);
+        const tailWiggle = Math.sin(Date.now() * 0.02) * 5;
+        ctx.quadraticCurveTo(x - 20, y + tailWiggle, x - 25, y + 5);
+        ctx.stroke();
+    }
+
+    drawInteractiveCat(ctx, x, y) {
+        // Cat body
+        ctx.fillStyle = '#FF8C00';
+        ctx.fillRect(x - 35, y - 15, 70, 35);
+
+        // Cat head
+        ctx.beginPath();
+        ctx.arc(x + 35, y, 22, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Cat ears (triangular)
+        ctx.fillStyle = '#FF8C00';
+        ctx.beginPath();
+        ctx.moveTo(x + 25, y - 15);
+        ctx.lineTo(x + 20, y - 25);
+        ctx.lineTo(x + 30, y - 18);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(x + 45, y - 15);
+        ctx.lineTo(x + 40, y - 25);
+        ctx.lineTo(x + 50, y - 18);
+        ctx.closePath();
+        ctx.fill();
+
+        // Pink inner ears
+        ctx.fillStyle = '#FFB6C1';
+        ctx.beginPath();
+        ctx.moveTo(x + 25, y - 15);
+        ctx.lineTo(x + 23, y - 20);
+        ctx.lineTo(x + 28, y - 17);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(x + 45, y - 15);
+        ctx.lineTo(x + 42, y - 20);
+        ctx.lineTo(x + 47, y - 17);
+        ctx.closePath();
+        ctx.fill();
+
+        // Cat eyes (green with slits)
+        ctx.fillStyle = '#88DD44';
+        ctx.beginPath();
+        ctx.ellipse(x + 30, y - 3, 5, 7, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(x + 42, y - 3, 5, 7, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Slit pupils
+        ctx.fillStyle = '#000';
+        ctx.fillRect(x + 29, y - 6, 2, 6);
+        ctx.fillRect(x + 41, y - 6, 2, 6);
+
+        // Eye shine
+        ctx.fillStyle = '#FFF';
+        ctx.beginPath();
+        ctx.arc(x + 31, y - 5, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x + 43, y - 5, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Pink nose
+        ctx.fillStyle = '#FFB6C1';
+        ctx.beginPath();
+        ctx.moveTo(x + 36, y + 5);
+        ctx.lineTo(x + 34, y + 8);
+        ctx.lineTo(x + 38, y + 8);
+        ctx.closePath();
+        ctx.fill();
+
+        // Whiskers
+        ctx.strokeStyle = '#FFF';
+        ctx.lineWidth = 1.5;
+        for (let i = -1; i <= 1; i++) {
+            ctx.beginPath();
+            ctx.moveTo(x + 36, y + 3 + i * 3);
+            ctx.lineTo(x + 55, y + i * 4);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x + 36, y + 3 + i * 3);
+            ctx.lineTo(x + 17, y + i * 4);
+            ctx.stroke();
+        }
+
+        // Legs
+        ctx.fillStyle = '#FF6347';
+        ctx.fillRect(x - 25, y + 15, 10, 25);
+        ctx.fillRect(x - 5, y + 15, 10, 25);
+        ctx.fillRect(x + 15, y + 15, 10, 25);
+        ctx.fillRect(x + 35, y + 15, 10, 25);
+
+        // Tail (curved and animated)
+        const tailWag = Math.sin(Date.now() * 0.008) * 15;
+        ctx.fillStyle = '#FF8C00';
+        ctx.save();
+        ctx.translate(x - 35, y);
+        ctx.rotate((tailWag + 30) * Math.PI / 180);
+        ctx.fillRect(-25, -5, 30, 10);
+        ctx.restore();
+
+        // Stripes
+        ctx.fillStyle = 'rgba(139, 69, 19, 0.4)';
+        for (let i = 0; i < 4; i++) {
+            ctx.fillRect(x - 30 + i * 15, y - 12, 8, 25);
         }
     }
 
@@ -2468,8 +2762,15 @@ class PetShopGame {
             this.ballGameHandlers = null;
         }
 
-        // Clear ball game state
+        // Clean up cat game event listeners if they exist
+        if (this.catGameHandlers) {
+            canvas.removeEventListener('mousemove', this.catGameHandlers.mouseMoveHandler);
+            this.catGameHandlers = null;
+        }
+
+        // Clear game states
         this.ballGame = null;
+        this.catGame = null;
     }
 
     animateAnimal(animal, type) {
