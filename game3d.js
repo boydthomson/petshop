@@ -703,12 +703,12 @@ class PetShopGame {
                 group.add(leftDogEar);
 
                 // Inner ear (lighter color)
-                const innerEarGeo = new THREE.BoxGeometry(0.25, 0.6, 0.1);
-                const innerEarMaterial = new THREE.MeshStandardMaterial({
+                const dogInnerEarGeo = new THREE.BoxGeometry(0.25, 0.6, 0.1);
+                const dogInnerEarMaterial = new THREE.MeshStandardMaterial({
                     color: new THREE.Color(color).offsetHSL(0, -0.2, 0.4),
                     roughness: 0.9
                 });
-                const leftInnerEar = new THREE.Mesh(innerEarGeo, innerEarMaterial);
+                const leftInnerEar = new THREE.Mesh(dogInnerEarGeo, dogInnerEarMaterial);
                 leftInnerEar.position.set(-0.6, 0.45, 0.85);
                 leftInnerEar.rotation.set(0.3, 0, 0.7);
                 group.add(leftInnerEar);
@@ -719,7 +719,7 @@ class PetShopGame {
                 rightDogEar.castShadow = true;
                 group.add(rightDogEar);
 
-                const rightInnerEar = new THREE.Mesh(innerEarGeo, innerEarMaterial);
+                const rightInnerEar = new THREE.Mesh(dogInnerEarGeo, dogInnerEarMaterial);
                 rightInnerEar.position.set(0.6, 0.45, 0.85);
                 rightInnerEar.rotation.set(0.3, 0, -0.7);
                 group.add(rightInnerEar);
@@ -771,16 +771,16 @@ class PetShopGame {
                 group.add(leftCatEar);
 
                 // Pink inner ear detail
-                const innerEarGeo = new THREE.ConeGeometry(0.15, 0.35, 4);
-                const innerEarMaterial = new THREE.MeshStandardMaterial({
+                const catInnerEarGeo = new THREE.ConeGeometry(0.15, 0.35, 4);
+                const catInnerEarMaterial = new THREE.MeshStandardMaterial({
                     color: 0xFFB6C1,
                     roughness: 0.8
                 });
-                const leftInnerEar = new THREE.Mesh(innerEarGeo, innerEarMaterial);
-                leftInnerEar.position.set(-0.4, 1.2, 0.95);
-                leftInnerEar.rotation.z = -0.2;
-                leftInnerEar.castShadow = true;
-                group.add(leftInnerEar);
+                const leftCatInnerEar = new THREE.Mesh(catInnerEarGeo, catInnerEarMaterial);
+                leftCatInnerEar.position.set(-0.4, 1.2, 0.95);
+                leftCatInnerEar.rotation.z = -0.2;
+                leftCatInnerEar.castShadow = true;
+                group.add(leftCatInnerEar);
 
                 const rightCatEar = new THREE.Mesh(catEarGeo, bodyMaterial);
                 rightCatEar.position.set(0.4, 1.2, 0.9);
@@ -788,11 +788,11 @@ class PetShopGame {
                 rightCatEar.castShadow = true;
                 group.add(rightCatEar);
 
-                const rightInnerEar = new THREE.Mesh(innerEarGeo, innerEarMaterial);
-                rightInnerEar.position.set(0.4, 1.2, 0.95);
-                rightInnerEar.rotation.z = 0.2;
-                rightInnerEar.castShadow = true;
-                group.add(rightInnerEar);
+                const rightCatInnerEar = new THREE.Mesh(catInnerEarGeo, catInnerEarMaterial);
+                rightCatInnerEar.position.set(0.4, 1.2, 0.95);
+                rightCatInnerEar.rotation.z = 0.2;
+                rightCatInnerEar.castShadow = true;
+                group.add(rightCatInnerEar);
 
                 // Whiskers - long thin cylinders
                 const whiskerMaterial = new THREE.MeshStandardMaterial({
