@@ -2,7 +2,7 @@
 
 A browser-based 3D pet shop simulation game where you can interact with adorable pets including dogs, cats, and rabbits. Take care of your pets by feeding, washing, petting, and playing interactive mini-games with them!
 
-![3D Pet Shop Screenshot](screenshot2.png)
+![3D Pet Shop Screenshot](Screenshot2.png)
 
 ## Features
 
