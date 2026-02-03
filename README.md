@@ -77,7 +77,7 @@ http://localhost:8000
 ## Browser Compatibility
 
 Works best in modern browsers:
-- Chrome/Chromium (recommended)
+- Chrome/Chromium
 - Firefox
 - Safari
 - Edge
